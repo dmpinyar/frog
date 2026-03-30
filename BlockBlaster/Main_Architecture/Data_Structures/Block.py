@@ -21,6 +21,10 @@ class Block:
             raise TypeError("Expected a Tile object")
         self.tiles[idx]
 
+    def get_tiles(self):
+        """ returns the entire tilelist """
+        return self.tileList
+
     def get_occupied(self, idx):
         """ returns isOccupied at (x, y) """
         return self.get_tile(idx).isOccupied

@@ -14,9 +14,18 @@ TILE_SPLIT = 20
 BOARD_X_OFFSET = 140
 BOARD_Y_OFFSET = 245
 
+BLOCKS_Y_OFFSET = 905
+BLOCKS_X_OFFSET_1 = 255
+BLOCKS_X_DELTA = 160
+
+BACKGROUND_TILE_OFFSET_X = 415
+BACKGROUND_TILE_OFFSET_Y = 785
+
+MINI_BLOCK_WIDTH = 30
+
 class Sensors:
     def __init__(self):
-        """ initializes the sensors, sets board to null but if app is open we could also just call initializeStateSpace """
+        """ initializes the sensors, sets board to current status"""
         matchingWindows = wn.getWindowsWithTitle("Block Blast!")
         if not matchingWindows:
             raise Exception("Block Blast not found. Confirm app is open")
@@ -28,6 +37,9 @@ class Sensors:
 
         self.boardLeft = window.left + BOARD_X_OFFSET
         self.boardTop = window.top + BOARD_Y_OFFSET
+
+        self.blocksTop = window.top + BLOCKS_Y_OFFSET
+        self.blocksLeft = window.left + BLOCKS_X_OFFSET_1
         
         self.board = self.initializeStatespace()
 
@@ -54,27 +66,62 @@ class Sensors:
         """ returns the board state maintained in this object """
         return self.board
     
-    def placeBlock(self):
-        """ updates the maintained board with the block we chose to place down """
-        return None
+    def placeBlock(self, x, y, block):
+        """
+        updates the maintained board with the block we chose to place down 
+        x would be the top left of the block I think
+        """
+        for tile in block.get_tiles():
+            if (self.board[x + tile.x][y + tile.y].isOccupied()):
+                raise Exception("Chose occupied location for block")
+            self.board[x + tile.x][y + tile.y].setOccupied()
     
     def readBlocks(self):
         """ reads the three choice input blocks and returns a list for them """
+        # gui.moveTo(BLOCKS_X_OFFSET_1 + 1 * BLOCKS_X_DELTA + MINI_BLOCK_WIDTH, BLOCKS_Y_OFFSET)
+        backgroundColor = gui.pixel(BACKGROUND_TILE_OFFSET_X, BACKGROUND_TILE_OFFSET_Y)
+        tileColor = None
+        print(backgroundColor)
+
+        for i in range(0, 3):
+            color = gui.pixel(BLOCKS_X_OFFSET_1 + i * BLOCKS_X_DELTA, BLOCKS_Y_OFFSET)
+            colorR = gui.pixel(BLOCKS_X_OFFSET_1 + i * BLOCKS_X_DELTA + (int) (MINI_BLOCK_WIDTH / 2), BLOCKS_Y_OFFSET)
+            colorL = gui.pixel(BLOCKS_X_OFFSET_1 + i * BLOCKS_X_DELTA - (int) (MINI_BLOCK_WIDTH / 2), BLOCKS_Y_OFFSET)
+            colorU = gui.pixel(BLOCKS_X_OFFSET_1 + i * BLOCKS_X_DELTA, BLOCKS_Y_OFFSET - (int) (MINI_BLOCK_WIDTH / 2))
+            colorD = gui.pixel(BLOCKS_X_OFFSET_1 + i * BLOCKS_X_DELTA, BLOCKS_Y_OFFSET + (int) (MINI_BLOCK_WIDTH / 2))
+            #print(f"color {}")
+
         return None
+    
+    def _readSingleBlock(backgroundColor, x, y):
+        blockFound = False
+        color = None
 
-# test = Sensors()
-# board = test.getBoard().get_tiles()
-# for y in range(0, 8):  # start from highest y
-#     for x in range(8):
-#         if board[x][y].isOccupied:  # example condition
-#             print(1, end=" ")
-#         else:
-#             print(0, end=" ")
-#     print()
+        # # check cardinal directions 
+        # for i in range(0, MINI_BLOCK_WIDTH):
+            
+        # while (blockFound == False):
+        #     color = gui.pixel(x, y)
+            
+        return None
+    
+    def printBoardRepresentation(self):
+        """ prints board for testing purposes """
+        board = self.board.get_tiles()
+        for y in range(0, BOARD_HEIGHT): 
+            for x in range(0, BOARD_WIDTH):
+                if board[x][y].isOccupied:
+                    print(1, end=" ")
+                else:
+                    print(0, end=" ")
+            print()
 
+test = Sensors()
+test.readBlocks()
+# test.printBoardRepresentation()
 
 # while True:
-#         x, y = gui.position()
-#         positionStr = 'X: ' + str(x).rjust(4) + ' Y: ' + str(y).rjust(4)
-#         print(positionStr, end='')
-#         print('\b' * len(positionStr), end='', flush=True)
+#     x, y = gui.position()
+#     positionStr = 'X: ' + str(x).rjust(4) + ' Y: ' + str(y).rjust(4) + ' Color: ' + str(gui.pixel(x, y))
+#     print(positionStr, end='')
+#     print('\b' * len(positionStr), end='', flush=True)
