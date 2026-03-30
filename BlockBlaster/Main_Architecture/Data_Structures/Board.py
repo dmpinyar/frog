@@ -1,4 +1,4 @@
-from Tile import Tile
+from Data_Structures.Tile import Tile
 
 class Board:
     def __init__(self, width, height):

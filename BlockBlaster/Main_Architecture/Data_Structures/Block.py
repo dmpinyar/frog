@@ -1,4 +1,4 @@
-from Tile import Tile
+from Data_Structures.Tile import Tile
 
 class Block:
     def __init__(self, width, height, tileList):
@@ -11,7 +11,6 @@ class Block:
         self.height = height
         self.tileList = tileList
 
-
     def get_tile(self, idx):
         """ returns the Tile at (x, y) """
         return self.tiles[idx]
@@ -21,6 +20,10 @@ class Block:
         if not isinstance(tile, Tile):
             raise TypeError("Expected a Tile object")
         self.tiles[idx]
+
+    def get_tiles(self):
+        """ returns the entire tilelist """
+        return self.tileList
 
     def get_occupied(self, idx):
         """ returns isOccupied at (x, y) """
