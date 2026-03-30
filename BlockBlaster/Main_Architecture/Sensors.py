@@ -1,3 +1,5 @@
+from Data_Structures.Board import Board
+
 class Sensors:
     def __init__(self):
         """ initializes the sensors, sets board to null but if app is open we could also just call initializeStateSpace """
