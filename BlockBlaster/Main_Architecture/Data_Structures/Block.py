@@ -1,4 +1,4 @@
-from Tile import Tile
+from Data_Structures.Tile import Tile
 
 class Block:
     def __init__(self, width, height, tileList):
@@ -10,7 +10,6 @@ class Block:
         self.width = width
         self.height = height
         self.tileList = tileList
-
 
     def get_tile(self, idx):
         """ returns the Tile at (x, y) """
