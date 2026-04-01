@@ -188,7 +188,7 @@ class Sensors:
         if (len(all_blocks) == 0):
             raise Exception("no blocks detected")
         
-        return all_blocks
+        return self._convertAllPairsToBlocks(all_blocks)
     
     def _getMostCommonColor(self, x, y, width, height, backgroundColors, tolerance=TOLERANCE):
         left = int(x - width // 2)
@@ -277,6 +277,36 @@ class Sensors:
     def _colorsClose(self, c1, c2, tolerance=TOLERANCE):
         return all(abs(int(a) - int(b)) <= tolerance for a, b in zip(c1, c2))
     
+    def _convertAllPairsToBlocks(self, fullCoordinateSet):
+        converted = []
+
+        for set in fullCoordinateSet:
+            converted.append(self._convertPairToBlock(set))
+
+        return converted
+
+    def _convertSetToBlock(self, coordinateSet):
+
+        # standardize values
+        i = 0
+        while (i < len(coordinateSet)):
+            x = coordinateSet[i][0]
+            y = coordinateSet[i][1]
+
+            if (x < 0):
+                for i in range(0, coordinateSet):
+                    coordinateSet[i][0] += 1
+                i = 0
+                continue
+            if (y < 0):
+                for i in range(0, coordinateSet):
+                    coordinateSet[i][1] += 1
+                i = 0
+                continue
+            i += 1
+
+        return Block(coordinateSet)
+
     def printBoardRepresentation(self):
         """ prints board for testing purposes """
         board = self.board.get_tiles()
