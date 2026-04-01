@@ -281,31 +281,20 @@ class Sensors:
         converted = []
 
         for set in fullCoordinateSet:
-            converted.append(self._convertPairToBlock(set))
+            converted.append(self._convertSetToBlock(set))
 
         return converted
 
     def _convertSetToBlock(self, coordinateSet):
-
         # standardize values
-        i = 0
-        while (i < len(coordinateSet)):
-            x = coordinateSet[i][0]
-            y = coordinateSet[i][1]
+        min_x = min(coord[0] for coord in coordinateSet)
+        min_y = min(coord[1] for coord in coordinateSet)
 
-            if (x < 0):
-                for i in range(0, coordinateSet):
-                    coordinateSet[i][0] += 1
-                i = 0
-                continue
-            if (y < 0):
-                for i in range(0, coordinateSet):
-                    coordinateSet[i][1] += 1
-                i = 0
-                continue
-            i += 1
+        normalized = []
+        for x, y in coordinateSet:
+            normalized.append([x - min_x, y - min_y])
 
-        return Block(coordinateSet)
+        return Block(normalized)
 
     def printBoardRepresentation(self):
         """ prints board for testing purposes """
@@ -317,3 +306,10 @@ class Sensors:
                 else:
                     print(0, end=" ")
             print()
+
+# test = Sensors()
+# test.printBoardRepresentation()
+# blockList = test.readBlocks()
+
+# for block in blockList:
+#     print(block.getTiles())

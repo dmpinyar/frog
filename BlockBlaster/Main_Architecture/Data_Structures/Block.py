@@ -18,11 +18,11 @@ class Block:
         self.width = maxX + 1
         self.height = maxY + 1
 
-    def get_tile(self, idx):
+    def getTile(self, idx):
         """ returns the Tile at (x, y) """
         return self.coordinateList[idx]
     
-    def get_tiles(self):
+    def getTiles(self):
         """ returns the entire tilelist """
         return self.coordinateList
 
