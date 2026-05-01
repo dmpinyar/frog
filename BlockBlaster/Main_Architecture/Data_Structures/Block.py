@@ -1,5 +1,5 @@
 class Block:
-    def __init__(self, coordinateList):
+    def __init__(self, coordinateList, tileColor):
         """
         initalizes Block object, either does it with a list of tiles or if not provided
         just initializes it all to false tiles. Kind of just leaving it open for implementation
@@ -17,6 +17,7 @@ class Block:
 
         self.width = maxX + 1
         self.height = maxY + 1
+        self.tileColor = tileColor
 
     def getTile(self, idx):
         """ returns the Tile at (x, y) """
@@ -31,3 +32,6 @@ class Block:
     
     def getHeight(self):
         return self.height
+    
+    def getTileColor(self):
+        return self.tileColor

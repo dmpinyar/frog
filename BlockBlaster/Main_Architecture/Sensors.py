@@ -3,6 +3,7 @@ import pyautogui as gui
 import numpy as np
 import mss
 from collections import deque
+import time
 
 from Data_Structures.Board import Board
 from Data_Structures.Block import Block
@@ -10,22 +11,41 @@ from Data_Structures.Block import Block
 ### class constants ###
 BOARD_WIDTH = 8
 BOARD_HEIGHT = 8
-WINDOW_WIDTH = 628
-WINDOW_HEIGHT = 1020
-TILE_WIDTH = 60
-TILE_SPLIT = 24
-BOARD_X_OFFSET = 145
-BOARD_Y_OFFSET = 250
+# WINDOW_WIDTH = 628
+# WINDOW_HEIGHT = 1020
+# TILE_WIDTH = 60
+# TILE_SPLIT = 24
+# BOARD_X_OFFSET = 145
+# BOARD_Y_OFFSET = 250
 
-BLOCKS_Y_OFFSET = 841
-BLOCKS_X_OFFSET_1 = 195
-BLOCKS_X_DELTA = 159
+# BLOCKS_Y_OFFSET = 841
+# BLOCKS_X_OFFSET_1 = 195
+# BLOCKS_X_DELTA = 159
 
-BACKGROUND_TILE_OFFSET_Y = 90
+# BACKGROUND_TILE_OFFSET_Y = 90
 
-MINI_BLOCK_WIDTH = 29
+# MINI_BLOCK_WIDTH = 29
 
 TOLERANCE = 10
+
+
+
+BASE_WINDOW_WIDTH = 628
+BASE_WINDOW_HEIGHT = 1020
+
+# these ones are offset from board x and y offset (add them)
+# MIN_MOUSE_CHECK_X = -50
+# MAX_MOUSE_CHECK_X = 500
+# MIN_MOUSE_CHECK_Y = 160
+# MAX_MOUSE_CHECK_Y = 690
+
+
+# MIN_MOUSE_CHECK_X = -100
+# MAX_MOUSE_CHECK_X = 450
+# MIN_MOUSE_CHECK_Y = 210
+# MAX_MOUSE_CHECK_Y = 650
+# MOUSE_STEP = 20
+
 
 class Sensors:
     def __init__(self):
@@ -34,16 +54,44 @@ class Sensors:
         if not matchingWindows:
             raise Exception("Block Blast not found. Confirm app is open")
         window = matchingWindows[0]
-        if window.width != WINDOW_WIDTH:
-            raise Exception(f"Window size error. Window width is {window.width} but should be {WINDOW_WIDTH}")
-        if window.height != WINDOW_HEIGHT:
-            raise Exception(f"Window size error. Window height is {window.height} but should be {WINDOW_HEIGHT}")
 
-        self.boardLeft = window.left + BOARD_X_OFFSET
-        self.boardTop = window.top + BOARD_Y_OFFSET
+        # Actual window size
+        self.window_width = window.width
+        self.window_height = window.height
 
-        self.blocksLeft = window.left + BLOCKS_X_OFFSET_1
-        self.blocksTop = window.top + BLOCKS_Y_OFFSET
+        # Scale factors
+        self.scale_x = self.window_width / BASE_WINDOW_WIDTH
+        self.scale_y = self.window_height / BASE_WINDOW_HEIGHT
+
+        # if window.width != WINDOW_WIDTH:
+        #     raise Exception(f"Window size error. Window width is {window.width} but should be {WINDOW_WIDTH}")
+        # if window.height != WINDOW_HEIGHT:
+        #     raise Exception(f"Window size error. Window height is {window.height} but should be {WINDOW_HEIGHT}")
+
+        # Board
+        self.TILE_WIDTH = int(60 * self.scale_x)
+        self.TILE_SPLIT = int(24 * self.scale_y)
+        self.BOARD_X_OFFSET = int(145 * self.scale_x)
+        self.BOARD_Y_OFFSET = int(250 * self.scale_y)
+        self.BLOCKS_Y_OFFSET = int(841 * self.scale_y)
+        self.BLOCKS_X_OFFSET_1 = int(195 * self.scale_x)
+        self.BLOCKS_X_DELTA = int(159 * self.scale_x)
+        self.BACKGROUND_TILE_OFFSET_Y = int(90 * self.scale_y)
+        self.MINI_BLOCK_WIDTH = int(29 * self.scale_x)
+        self.MIN_MOUSE_CHECK_X = int(-100 * self.scale_x)
+        self.MAX_MOUSE_CHECK_X = int(450 * self.scale_x)
+        self.MIN_MOUSE_CHECK_Y = int(210 * self.scale_y)
+        self.MAX_MOUSE_CHECK_Y = int(650 * self.scale_y)
+
+        self.MOUSE_STEP = max(1, int(20 * min(self.scale_x, self.scale_y)))
+
+
+
+        self.boardLeft = window.left + self.BOARD_X_OFFSET
+        self.boardTop = window.top + self.BOARD_Y_OFFSET
+
+        self.blocksLeft = window.left + self.BLOCKS_X_OFFSET_1
+        self.blocksTop = window.top + self.BLOCKS_Y_OFFSET
         
         
         self.board = self.initializeStatespace()
@@ -56,11 +104,11 @@ class Sensors:
 
         for x in range(0, BOARD_WIDTH):
             for y in range(0, BOARD_HEIGHT):
-                checkBaseX = self.boardLeft + x * TILE_WIDTH
-                checkBaseY = self.boardTop + y * TILE_WIDTH
+                checkBaseX = self.boardLeft + x * self.TILE_WIDTH
+                checkBaseY = self.boardTop + y * self.TILE_WIDTH
 
                 color1 = gui.pixel(checkBaseX, checkBaseY)
-                color2 = gui.pixel(checkBaseX, checkBaseY - TILE_SPLIT)
+                color2 = gui.pixel(checkBaseX, checkBaseY - self.TILE_SPLIT)
 
                 if color1 != color2:
                     board.set_occupied(x, y)
@@ -71,43 +119,102 @@ class Sensors:
         """ returns the board state maintained in this object """
         return self.board
     
-    def placeBlock(self, x, y, block):
+    def _getBackgroundColor(self):
+        for x in range(0, BOARD_WIDTH):
+            for y in range(0, BOARD_HEIGHT):
+                checkBaseX = self.boardLeft + x * self.TILE_WIDTH
+                checkBaseY = self.boardTop + y * self.TILE_WIDTH
+
+                color1 = gui.pixel(checkBaseX, checkBaseY)
+                color2 = gui.pixel(checkBaseX, checkBaseY - self.TILE_SPLIT)
+
+                if color1 == color2:
+                    return color1
+
+        return None
+    
+    def placeBlock(self, x, y, block, choice, backgroundColor=None):
         """
         updates the maintained board with the block we chose to place down 
-        x would be the top left of the block I think
+        x would be the top left of the block I think. Further it actually 
+        places a block down from the given choices (probably an integer for 0, 1, or 2) and the 
+        (x, y) of where it is supposed to go on the board from the bottom left of the block. The bottom
+        left of the block is without regard to the tile space, so there may not be anything there (at tile (0,0)), 
+        but it still exists as a pivot point within the block. Takes the block just for help encapsulating data
         """
-        for tile in block.get_tiles():
-            if (self.board[x + tile.x][y + tile.y].isOccupied()):
+
+        for tile in block.getTiles():
+            boardX = tile[0] + x
+            boardY = block.getHeight() - 1 - tile[1] + y
+            
+            if (self.board.get_tile(boardX, boardY).isOccupied):
                 raise Exception("Chose occupied location for block")
-            self.board[x + tile.x][y + tile.y].setOccupied()
+            self.board.set_occupied(boardX, boardY)
+            
+        ## this needs to be fixed but I don't want to figure out the coordinate logic right now
+
+        # places the block using some exhaustion search something or other
+        try:
+            blockCenterX = self.blocksLeft + choice * self.BLOCKS_X_DELTA
+            blockCenterY = self.blocksTop
+            backgroundColor = self._getBackgroundColor()
+            
+            gui.moveTo(blockCenterX, blockCenterY)
+            gui.mouseDown()
+            
+            for boardY in range(self.boardTop + self.MIN_MOUSE_CHECK_Y, self.boardTop + self.MAX_MOUSE_CHECK_Y, self.MOUSE_STEP):
+                for boardX in range(self.boardLeft + self.MIN_MOUSE_CHECK_X, self.boardLeft + self.MAX_MOUSE_CHECK_X, self.MOUSE_STEP):
+                    # for every mouse position check that the tile colors match and place if so
+                    gui.moveTo(boardX, boardY)
+
+                    found = True
+                    tiles = block.getTiles()
+                    for tile in tiles:
+                        checkBaseX = self.boardLeft + (tile[0] + x) * self.TILE_WIDTH
+                        checkBaseY = self.boardTop + (block.getHeight() - 1 - tile[1] + y) * self.TILE_WIDTH
+                        color = gui.pixel(checkBaseX, checkBaseY)
+                        if color == backgroundColor:
+                            found = False
+                            break
+                    
+                    if found == True:
+                        gui.mouseUp()
+                        return True
+
+        finally:
+            gui.mouseUp()
+
+        return False
+
     
     def readBlocks(self):
         """ reads the three choice input blocks and returns a list for them """
         backgroundColors = self._getUniqueColorsInColumn(self.blocksLeft - 90, self.blocksTop + 150, self.blocksTop - 150)
 
         all_blocks = []
+        block_colors = []
 
         for i in range(0, 3):
             # locate the center of a block within a pattern
-            blockCenterX = self.blocksLeft + i * BLOCKS_X_DELTA
+            blockCenterX = self.blocksLeft + i * self.BLOCKS_X_DELTA
             blockCenterY = self.blocksTop
 
             color = gui.pixel(blockCenterX, blockCenterY)
             if (self._colorInColors(color, backgroundColors)):
-                blockCenterY -= MINI_BLOCK_WIDTH
+                blockCenterY -= self.MINI_BLOCK_WIDTH
                 color = gui.pixel(blockCenterX, blockCenterY)
             if (self._colorInColors(color, backgroundColors)):
-                blockCenterY += 2 * MINI_BLOCK_WIDTH
+                blockCenterY += 2 * self.MINI_BLOCK_WIDTH
                 color = gui.pixel(blockCenterX, blockCenterY)
             
-            commonColor = self._getMostCommonColor(blockCenterX, blockCenterY, MINI_BLOCK_WIDTH, MINI_BLOCK_WIDTH, backgroundColors)
+            commonColor = self._getMostCommonColor(blockCenterX, blockCenterY, self.MINI_BLOCK_WIDTH, self.MINI_BLOCK_WIDTH, backgroundColors)
             if (commonColor is None):
                 continue
 
             tempX = blockCenterX
             tempY = blockCenterY
             
-            offset = MINI_BLOCK_WIDTH // 2
+            offset = self.MINI_BLOCK_WIDTH // 2
             colorC = gui.pixel(blockCenterX, blockCenterY)
             colorR = gui.pixel(blockCenterX + offset, blockCenterY)
             colorU = gui.pixel(blockCenterX, blockCenterY - offset)
@@ -167,14 +274,14 @@ class Sensors:
                 tiles.append((rx, ry))
 
                 directions = [
-                    (MINI_BLOCK_WIDTH, 0, 1, 0),
-                    (-MINI_BLOCK_WIDTH, 0, -1, 0),
-                    (0, MINI_BLOCK_WIDTH, 0, -1),
-                    (0, -MINI_BLOCK_WIDTH, 0, 1),
-                    (MINI_BLOCK_WIDTH, MINI_BLOCK_WIDTH, 1, -1),
-                    (-MINI_BLOCK_WIDTH, -MINI_BLOCK_WIDTH, -1, 1),
-                    (-MINI_BLOCK_WIDTH, MINI_BLOCK_WIDTH, -1, -1),
-                    (MINI_BLOCK_WIDTH, -MINI_BLOCK_WIDTH, 1, 1)
+                    (self.MINI_BLOCK_WIDTH, 0, 1, 0),
+                    (-self.MINI_BLOCK_WIDTH, 0, -1, 0),
+                    (0, self.MINI_BLOCK_WIDTH, 0, -1),
+                    (0, -self.MINI_BLOCK_WIDTH, 0, 1),
+                    (self.MINI_BLOCK_WIDTH, self.MINI_BLOCK_WIDTH, 1, -1),
+                    (-self.MINI_BLOCK_WIDTH, -self.MINI_BLOCK_WIDTH, -1, 1),
+                    (-self.MINI_BLOCK_WIDTH, self.MINI_BLOCK_WIDTH, -1, -1),
+                    (self.MINI_BLOCK_WIDTH, -self.MINI_BLOCK_WIDTH, 1, 1)
                 ]
 
                 for dx, dy, rdx, rdy in directions:
@@ -184,11 +291,12 @@ class Sensors:
                         queue.append(((nx, ny), (nrx, nry)))
 
             all_blocks.append(tiles)
+            block_colors.append(commonColor)
 
         if (len(all_blocks) == 0):
             raise Exception("no blocks detected")
         
-        return self._convertAllPairsToBlocks(all_blocks)
+        return self._convertAllPairsToBlocks(all_blocks, block_colors)
     
     def _getMostCommonColor(self, x, y, width, height, backgroundColors, tolerance=TOLERANCE):
         left = int(x - width // 2)
@@ -233,7 +341,7 @@ class Sensors:
     
     def _getShadowColor(self, backgroundColor, startingX, startingY):
         color = None
-        startingX += MINI_BLOCK_WIDTH // 6
+        startingX += self.MINI_BLOCK_WIDTH // 6
         startingY -= 5
         while True:
             currentColor = gui.pixel(startingX, startingY)
@@ -277,15 +385,15 @@ class Sensors:
     def _colorsClose(self, c1, c2, tolerance=TOLERANCE):
         return all(abs(int(a) - int(b)) <= tolerance for a, b in zip(c1, c2))
     
-    def _convertAllPairsToBlocks(self, fullCoordinateSet):
+    def _convertAllPairsToBlocks(self, fullCoordinateSet, colorList):
         converted = []
 
-        for set in fullCoordinateSet:
-            converted.append(self._convertSetToBlock(set))
+        for i in range(0, len(fullCoordinateSet)):
+            converted.append(self._convertSetToBlock(fullCoordinateSet[i], colorList[i]))
 
         return converted
 
-    def _convertSetToBlock(self, coordinateSet):
+    def _convertSetToBlock(self, coordinateSet, color):
         # standardize values
         min_x = min(coord[0] for coord in coordinateSet)
         min_y = min(coord[1] for coord in coordinateSet)
@@ -294,7 +402,7 @@ class Sensors:
         for x, y in coordinateSet:
             normalized.append([x - min_x, y - min_y])
 
-        return Block(normalized)
+        return Block(normalized, color)
 
     def printBoardRepresentation(self):
         """ prints board for testing purposes """
@@ -310,6 +418,26 @@ class Sensors:
 # test = Sensors()
 # test.printBoardRepresentation()
 # blockList = test.readBlocks()
-
 # for block in blockList:
 #     print(block.getTiles())
+#     print(block.getWidth())
+#     print(block.getHeight())
+#     print(block.getTileColor())
+# test.placeBlock(2, 0, blockList[0], 1) # 0 indexed x and y
+# x and y inputs are where you want to place on the board where 0,0
+# is the uppermost left tile . Places from the pivot of the bottom leftmost point
+# might also pivot from top left Im not quite sure yet
+# it does pivot from top left of the block
+
+# test.placeBlock(3, 3, blockList[1], 1)
+# test.placeBlock(3, 0, blockList[1], 1)
+# test.placeBlock(6, 1, blockList[2], 2)
+# test.placeBlock(7, 7, blockList[1], 1)
+# test.placeBlock(0, 7, blockList[2], 2)
+
+
+# while True:
+#     x, y = gui.position()
+#     positionStr = 'X: ' + str(x  - test.boardLeft).rjust(4) + ' Y: ' + str(y  - test.boardTop ).rjust(4) + ' Color: ' + str(gui.pixel(x, y))
+#     print(positionStr, end='')
+#     print('\b' * len(positionStr), end='', flush=True)
