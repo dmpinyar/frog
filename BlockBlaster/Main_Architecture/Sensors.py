@@ -415,9 +415,9 @@ class Sensors:
                     print(0, end=" ")
             print()
 
-test = Sensors()
+# test = Sensors()
 # test.printBoardRepresentation()
-blockList = test.readBlocks()
+# blockList = test.readBlocks()
 # for block in blockList:
 #     print(block.getTiles())
 #     print(block.getWidth())
@@ -429,7 +429,7 @@ blockList = test.readBlocks()
 # might also pivot from top left Im not quite sure yet
 # it does pivot from top left of the block
 
-test.placeBlock(3, 3, blockList[1], 1)
+# test.placeBlock(3, 3, blockList[1], 1)
 # test.placeBlock(3, 0, blockList[1], 1)
 # test.placeBlock(6, 1, blockList[2], 2)
 # test.placeBlock(7, 7, blockList[1], 1)
