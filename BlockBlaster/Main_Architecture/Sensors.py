@@ -143,6 +143,8 @@ class Sensors:
         but it still exists as a pivot point within the block. Takes the block just for help encapsulating data
         """
 
+        print(f"attempting to place block {choice} at {x}, {y}")
+
         for tile in block.getTiles():
             boardX = tile[0] + x
             boardY = block.getHeight() - 1 - tile[1] + y
@@ -150,8 +152,6 @@ class Sensors:
             if (self.board.get_tile(boardX, boardY).isOccupied):
                 raise Exception("Chose occupied location for block")
             self.board.set_occupied(boardX, boardY)
-            
-        ## this needs to be fixed but I don't want to figure out the coordinate logic right now
 
         # places the block using some exhaustion search something or other
         try:

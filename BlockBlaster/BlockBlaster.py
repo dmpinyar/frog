@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'Main_Architecture'))
 
 from Sensors import Sensors
@@ -33,6 +34,8 @@ class BlockBlaster:
                 self.sensors.placeBlock(x, y, blocks[block_idx], block_idx)
 
             rounds += 1
+            time.sleep(3)
+
 
 
 if __name__ == "__main__":
