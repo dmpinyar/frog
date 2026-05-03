@@ -290,8 +290,9 @@ class Sensors:
                     if (nx, ny) not in visited:
                         queue.append(((nx, ny), (nrx, nry)))
 
-            all_blocks.append(tiles)
-            block_colors.append(commonColor)
+            if tiles:
+                all_blocks.append(tiles)
+                block_colors.append(commonColor)
 
         if (len(all_blocks) == 0):
             raise Exception("no blocks detected")

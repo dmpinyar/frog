@@ -33,6 +33,7 @@ class BlockBlaster:
             for block_idx, x, y in actions:
                 self.sensors.placeBlock(x, y, blocks[block_idx], block_idx)
 
+            self.sensors.board = self.sensors.initializeStatespace()
             rounds += 1
             time.sleep(3)
 
