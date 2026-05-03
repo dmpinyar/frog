@@ -6,11 +6,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'Main_Architecture'))
 from Sensors import Sensors
 from Model import Model
 
-# --- swap this line to compare configurations ---
-# Model()                                                        full (MRV + LCV + FC)
-# Model(useLcv=False, useForwardChecking=False)                  MRV only
-# Model(useMrv=False, useLcv=False)                              backtracking + FC only
-# Model(useMrv=False, useLcv=False, useForwardChecking=False)    plain backtracking
+# "Empty" model is all heuristics enabled as true is the default for all. 
+# So if we want all off just say Model(useMrv=False, useLcv=False, useForwardChecking=False)
 ACTIVE_MODEL = Model()
 
 
