@@ -11,11 +11,11 @@ W, H = 8, 8
 
 # "Empty" model is all heuristics enabled as true is the default for all. 
 # So if we want all off just say Model(useMrv=False, useLcv=False, useForwardChecking=False)
-ACTIVE_MODEL = Model()
+# ACTIVE_MODEL = Model()
 
 # 'detailed' — shows board before placement, after placement, after line clears (per block)
 # 'fast'    — skips per-block display, only shows final stats
-DISPLAY_MODE = 'detailed'
+# DISPLAY_MODE = 'detailed'
 
 # Common Block Blast shapes — tiles use y=0 at bottom, y increases upward
 SHAPES = [
@@ -38,7 +38,11 @@ SHAPES = [
     [[0,0],[1,0],[1,1],[2,1]],                        # S shape
     [[1,0],[2,0],[0,1],[1,1]],                        # Z shape
     [[0,0],[1,0],[0,1],[1,1],[0,2],[1,2]],            # 2x3 rectangle
-    [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]],            # 3x2 rectangle
+    [[0,0],[1,0],[2,0],[0,1],[1,1]],                  # 3x2 rectangle
+    [[0,0],[0,1],[0,2],[1,2],[2,2]],                  # 3x3 L
+    [[2,0],[2,1],[2,2],[1,2],[0,2]],                  # 3x3 J
+    [[0,0],[1,0],[2,0],[0,1],[0,2]],                  # 3x3 L rotated
+    [[0,0],[1,0],[2,0],[2,1],[2,2]],                  # 3x3 J rotated
 ]
 
 
@@ -123,12 +127,12 @@ def printBlocks(blocks):
         print(line)
 
 
-def run():
+def run(doPrint=True, DISPLAY_MODE='detailed', useMrv=True, useLcv=True, useForwardChecking=True, useGreedy=False):
     '''
     This is the main function that simulates the game
     '''
     grid = [[False] * H for _ in range(W)]
-    model = ACTIVE_MODEL
+    model = Model(useMrv=useMrv, useLcv=useLcv, useForwardChecking=useForwardChecking, useGreedy=useGreedy)
     rounds = 0
     totalScore = 0
     totalLines = 0
@@ -139,12 +143,13 @@ def run():
         blocks = randomBlocks()
         board = gridToBoard(grid)
 
-        print(f"Round {rounds + 1}")
-        print("Board:")
-        printBoard(grid)
-        print("\nBlocks to place:")
-        printBlocks(blocks)
-        print()
+        if doPrint:
+            print(f"Round {rounds + 1}")
+            print("Board:")
+            printBoard(grid)
+            print("\nBlocks to place:")
+            printBlocks(blocks)
+            print()
 
         actions = model.generateActions(board, blocks)
 
@@ -159,7 +164,7 @@ def run():
             block = blocks[block_idx]
             tileScore = len(block.getTiles())
 
-            if DISPLAY_MODE == 'detailed':
+            if DISPLAY_MODE == 'detailed' and doPrint:
                 # For detailed mode, we show the board before placement. 
                 print(f"  Placing block {block_idx} at ({x}, {y}):")
                 print("  Before:")
@@ -167,7 +172,7 @@ def run():
 
             grid = placeOnly(grid, block, x, y)
 
-            if DISPLAY_MODE == 'detailed':
+            if DISPLAY_MODE == 'detailed' and doPrint:
                 # for detailed mode, we show the board after placing the block
                 # before any line clears, just for visual. 
                 print("  After placement:")
@@ -175,7 +180,7 @@ def run():
 
             grid, linesCleared = clearLines(grid)
 
-            if DISPLAY_MODE == 'detailed' and linesCleared > 0:
+            if DISPLAY_MODE == 'detailed' and linesCleared > 0 and doPrint:
                 # if needed, we show the board after any line clears. 
                 print(f"  {linesCleared} line(s) cleared!")
                 printBoard(grid)
@@ -184,18 +189,17 @@ def run():
             roundScore += tileScore + lineScore
             roundLines += linesCleared
 
-            if DISPLAY_MODE == 'detailed':
-                print(f"  +{tileScore} tile pts, +{lineScore} line pts\n")
-            else:
+            if DISPLAY_MODE == 'detailed' and doPrint:
                 print(f"  Placed block {block_idx} at ({x}, {y}):  +{tileScore} tile pts, +{lineScore} line pts")
 
         totalScore += roundScore
         totalLines += roundLines
         rounds += 1
 
-        print(f"\nBoard after round {rounds}:")
-        printBoard(grid)
-        print(f"Round score: {roundScore} | Lines cleared: {roundLines}\n")
+        if doPrint:
+            print(f"\nBoard after round {rounds}:")
+            printBoard(grid)
+            print(f"Round score: {roundScore} | Lines cleared: {roundLines}\n")
 
     print("End of game stats:")
     print(f"Rounds survived : {rounds}")
@@ -205,4 +209,25 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+    useMrv = True
+    useLcv = True
+    useForwardChecking = True
+    useGreedy = False
+    doPrint = True
+    display_mode = 'detailed'
+
+    for arg in sys.argv:
+        if (arg == "-nmrv"):
+            useMrv = False
+        if (arg == "-nlcv"):
+            useLcv = False
+        if (arg == "-nfc"):
+            useForwardChecking = False
+        if (arg == "-g"):
+            useGreedy = True
+        if (arg == "-np"):
+            doPrint = False
+        if (arg == "-nd"):
+            display_mode = ''
+
+    run(doPrint=doPrint, DISPLAY_MODE=display_mode, useMrv=useMrv, useLcv=useLcv, useForwardChecking=useForwardChecking, useGreedy=useGreedy)
