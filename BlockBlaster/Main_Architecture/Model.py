@@ -2,14 +2,16 @@ boardWidth, boardHeight = 8, 8
 
 
 class Model:
-    def __init__(self, useMrv=True, useLcv=True, useForwardChecking=True):
+    def __init__(self, useMrv=True, useLcv=True, useForwardChecking=True, useGreedy=False):
         '''
-        True if you want to use a specific variable constraint heuristic,
-        False if you want it off.
+        useGreedy=True switches to a greedy baseline that places each block
+        one at a time picking the locally best spot with no lookahead.
+        When useGreedy=False, backtracking runs with whichever heuristics are enabled.
         '''
         self.useMrv = useMrv
         self.useLcv = useLcv
         self.useForwardChecking = useForwardChecking
+        self.useGreedy = useGreedy
 
     def generateActions(self, board, blocks):
         '''
@@ -17,9 +19,44 @@ class Model:
         Should return as a list (block index, x, y) as the elements.
         '''
         grid = [[board.get_tile(x, y).isOccupied for y in range(boardHeight)] for x in range(boardWidth)]
+
+        if self.useGreedy:
+            return self._greedySolve(grid, blocks)
+
         best = {'actions': None, 'score': float('-inf')}
         self._solve(grid, blocks, list(range(len(blocks))), [], best)
         return best['actions']
+
+    def _greedySolve(self, grid, blocks):
+        '''
+        This just looks at each block in order and picks the placement
+        that leaves the most empty spots. So each block is independent. 
+        no lookahead. 
+        '''
+        actions = []
+        currentGrid = grid
+
+        for idx in range(len(blocks)):
+            block = blocks[idx]
+            candidates = self._placements(currentGrid, block)
+
+            if not candidates:
+                return None
+
+            bestPlacement = max(
+                candidates,
+                key=lambda p: sum(
+                    not self._place(currentGrid, block, p[0], p[1])[x][y]
+                    for x in range(boardWidth)
+                    for y in range(boardHeight)
+                )
+            )
+
+            x, y = bestPlacement
+            actions.append((idx, x, y))
+            currentGrid = self._place(currentGrid, block, x, y)
+
+        return actions
 
     def _solve(self, grid, blocks, unplaced, actions, best):
         '''
@@ -68,16 +105,13 @@ class Model:
         depending on the current board.
         '''
         validPlacements = []
-
         for x in range(boardWidth - block.getWidth() + 1):
             for y in range(boardHeight - block.getHeight() + 1):
                 valid = True
-
                 for tx, ty in block.getTiles():
                     if grid[x + tx][y + block.getHeight() - 1 - ty]:
                         valid = False
                         break
-
                 if valid:
                     validPlacements.append((x, y))
 
