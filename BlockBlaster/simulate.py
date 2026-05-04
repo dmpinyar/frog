@@ -131,13 +131,17 @@ def run(doPrint=True, DISPLAY_MODE='detailed', useMrv=True, useLcv=True, useForw
     '''
     This is the main function that simulates the game
     '''
+
     grid = [[False] * H for _ in range(W)]
     model = Model(useMrv=useMrv, useLcv=useLcv, useForwardChecking=useForwardChecking, useGreedy=useGreedy)
     rounds = 0
     totalScore = 0
     totalLines = 0
 
-    print("   Block Blast Simulation    \n")
+    if doPrint:
+        print("   Block Blast Simulation    \n")
+    else:
+        print("running Block Blast Simulation algorithm...")
 
     while True:
         blocks = randomBlocks()
@@ -154,7 +158,8 @@ def run(doPrint=True, DISPLAY_MODE='detailed', useMrv=True, useLcv=True, useForw
         actions = model.generateActions(board, blocks)
 
         if actions is None:
-            print("No more available actions! We lost! :(")
+            if doPrint:
+                print("No more available actions! We lost! :(")
             break
 
         roundScore = 0
@@ -189,7 +194,7 @@ def run(doPrint=True, DISPLAY_MODE='detailed', useMrv=True, useLcv=True, useForw
             roundScore += tileScore + lineScore
             roundLines += linesCleared
 
-            if DISPLAY_MODE == 'detailed' and doPrint:
+            if DISPLAY_MODE == 'detailed' or doPrint:
                 print(f"  Placed block {block_idx} at ({x}, {y}):  +{tileScore} tile pts, +{lineScore} line pts")
 
         totalScore += roundScore
@@ -206,6 +211,8 @@ def run(doPrint=True, DISPLAY_MODE='detailed', useMrv=True, useLcv=True, useForw
     print(f"Lines cleared   : {totalLines}")
     print(f"Total score     : {totalScore}")
 
+    return rounds, totalScore
+
 
 
 if __name__ == "__main__":
@@ -215,19 +222,37 @@ if __name__ == "__main__":
     useGreedy = False
     doPrint = True
     display_mode = 'detailed'
+    iterations = 1
 
     for arg in sys.argv:
         if (arg == "-nmrv"):
             useMrv = False
-        if (arg == "-nlcv"):
+        elif (arg == "-nlcv"):
             useLcv = False
-        if (arg == "-nfc"):
+        elif (arg == "-nfc"):
             useForwardChecking = False
-        if (arg == "-g"):
+        elif (arg == "-g"):
             useGreedy = True
-        if (arg == "-np"):
+        elif (arg == "-np"):
             doPrint = False
-        if (arg == "-nd"):
+        elif (arg == "-nd"):
             display_mode = ''
+        elif arg.startswith("-i="):
+            try:
+                iterations = int(arg.split("=")[1])
+            except ValueError:
+                print(f"Invalid iteration value: {arg}")
+                sys.exit(1)
 
-    run(doPrint=doPrint, DISPLAY_MODE=display_mode, useMrv=useMrv, useLcv=useLcv, useForwardChecking=useForwardChecking, useGreedy=useGreedy)
+    roundsSum = 0
+    scoreSum = 0
+
+    for i in range(iterations):
+        print(f"starting simulation {i}...")
+        rounds, totalScore = run(doPrint=doPrint, DISPLAY_MODE=display_mode, useMrv=useMrv, useLcv=useLcv, useForwardChecking=useForwardChecking, useGreedy=useGreedy)
+        roundsSum += rounds
+        scoreSum += totalScore
+    
+    print("End of simulations stats:")
+    print(f"average rounds survived : {roundsSum / iterations}")
+    print(f"average score achieved   : {scoreSum / iterations}")
