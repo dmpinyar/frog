@@ -1,6 +1,7 @@
 import sys
 import os
 import random
+import time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'Main_Architecture'))
 
 from Data_Structures.Board import Board
@@ -246,13 +247,18 @@ if __name__ == "__main__":
 
     roundsSum = 0
     scoreSum = 0
+    totalTime = 0
 
     for i in range(iterations):
         print(f"starting simulation {i}...")
+        initial = time.time()
         rounds, totalScore = run(doPrint=doPrint, DISPLAY_MODE=display_mode, useMrv=useMrv, useLcv=useLcv, useForwardChecking=useForwardChecking, useGreedy=useGreedy)
+        totalTime += time.time() - initial
+
         roundsSum += rounds
         scoreSum += totalScore
     
     print("End of simulations stats:")
-    print(f"average rounds survived : {roundsSum / iterations}")
-    print(f"average score achieved   : {scoreSum / iterations}")
+    print(f"average rounds survived over {iterations} iterations: {roundsSum / iterations}")
+    print(f"average score achieved over {iterations} iterations: {scoreSum / iterations}")
+    print(f"average time per iteration over {iterations} iterations: {totalTime / iterations}")

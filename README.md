@@ -18,19 +18,17 @@ No dependencies needed beyond the Python standard library.
 
 ## Configuration
 
-Open `simulate.py` and edit these two lines at the top:
+# various flags can be given to program
+by default all heuristics are on, so these all change the behavior of the program for testing purposes
+can be chosen in any order
 
-```python
-# Choose your model
-ACTIVE_MODEL = Model()                                                       # all heuristics on (default)
-ACTIVE_MODEL = Model(useMrv=False, useLcv=False, useForwardChecking=False)  # backtracking, no heuristics
-ACTIVE_MODEL = Model(useGreedy=True)                                         # greedy baseline
-
-# Choose display mode
-DISPLAY_MODE = 'detailed'   # shows board before/after each block placement
-DISPLAY_MODE = 'fast'       # shows round-level summary only
-```
-
+-nmrv   turn off minimum remaining values in the backtracking search
+-nlcv   turn off least common values in the backtracking search
+-nfc    turn off forward checking in the backtracking search
+-g      swap it to greedy search
+-np     simply turns off the board printing
+-nd     turns off the detailed version of the board printing (both need to be chosen for just final output)
+-i=x    whatever x is set to is the number of games it will play before halting
 
 ## Files
 
